@@ -29,7 +29,7 @@ by Jeffery Myers is marked with CC0 1.0. To view a copy of this license, visit h
 
 #define MAX_FRAME_SPEED     15
 #define MIN_FRAME_SPEED      1
-#define MAX_PLACEABLE_TILES 10
+#define MAX_PLACEABLE_TILES 256
 
 #define MAP_EDITOR_SIDE_BAR_NORMAL (Rectangle){ WIDTH-300, 0, 300, HEIGHT }
 #define MAP_EDITOR_SIDE_BAR_FOLDED (Rectangle){ WIDTH-100, 0, 100, HEIGHT }
@@ -46,8 +46,6 @@ typedef uint64_t u64;
 
 typedef float    f32;
 typedef double   f64;
-
-
 
 typedef struct GameContext
 {
@@ -72,7 +70,7 @@ typedef struct GameContext
 	Rectangle current_viewable_tile;
 	u8 tile_row_count;
 	u8 tile_col_count;
-	u8 current_tile;
+	u16 current_tile;
 	Vector2 current_tile_position;
 
 	// Side bar stuff
@@ -111,7 +109,6 @@ void update(GameContext* ctx)
 	{
 		ctx->accelaration += 0.1f;
 	}
-
 	else 
 	{
 		ctx->accelaration = 0.f;
@@ -166,7 +163,7 @@ void update(GameContext* ctx)
 	{
 		ctx->current_tile_position = (Vector2){ (u32)(ctx->mouse_pos.x / 32) * 32, (u32)(ctx->mouse_pos.y / 32) * 32 };
 		// Add a tile add the mouse position
-		if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) and not (ctx->placed_tiles_count == MAX_PLACEABLE_TILES)) 
+		if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) and not (ctx->placed_tiles_count == MAX_PLACEABLE_TILES))
 		{
 			bool replaced = false;
 			for (u16 i = 0; i < ctx->placed_tiles_count; i++)
@@ -188,7 +185,7 @@ void update(GameContext* ctx)
 			}
 		}
 		// Remove a tile (if it's there) and update the list
-		if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) 
+		if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
 		{
 			for (u16 i = 0; i < ctx->placed_tiles_count; i++)
 			{
@@ -243,13 +240,21 @@ void draw(GameContext* ctx)
 	
 	for(u16 i = 0; i < (ctx->tile_col_count * ctx->tile_row_count) - 1; i++)
 	{
-		u8 position_tile_selector_x = i % 3;
-		u8 position_tile_selector_y = i / 3;
+		u16 position_tile_selector_x = i % 3;
+		u16 position_tile_selector_y = i / 3;
 		Rectangle tile_selector = (Rectangle) { WIDTH - (ctx->map_editor_side_bar.width - (5 + 100 * position_tile_selector_x)), 5 + 100 * position_tile_selector_y, 90, 90 };
 		DrawRectangleRounded(tile_selector, 0.2f, 4, DARKGRAYALPHADER);
 		
-		if (CheckCollisionPointRec(ctx->mouse_pos, tile_selector))
+		if (CheckCollisionPointRec(ctx->mouse_pos, tile_selector)) {
 			DrawRectangleRoundedLinesEx(tile_selector, 0.2f, 0, 2.0f, RAYWHITE);
+			if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+				ctx->current_tile = i;
+			}
+		}
+
+		if (ctx->current_tile == i) {
+			DrawRectangleRoundedLinesEx(tile_selector, 0.2f, 0, 2.0f, BLUE);
+		}
 		
 		ctx->current_viewable_tile.x = (f32)(ctx->current_tile % ctx->tile_col_count) * (f32)ctx->template_tile.width / ctx->tile_col_count;
 		ctx->current_viewable_tile.y = (f32)(ctx->current_tile / ctx->tile_col_count) * (f32)ctx->template_tile.height / ctx->tile_row_count;
